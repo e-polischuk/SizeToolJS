@@ -1,0 +1,104 @@
+<!-- Tool for finding of dimensions -->
+<!-- Author: Jenya Polischuk, Now 2016 -->
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Distance on image</title>
+<script>
+window.onload = function() {
+	var map = document.getElementById("map");
+	map.onmousemove = showCoords;
+	map.onclick = getLength;
+
+	document.getElementById('guessInput').onchange = function(){
+		map.src = this.files[0].name;
+		origin = -1;
+		relation = 0;
+		document.getElementById('distance').innerHTML = "Input length and select first point!";
+		document.getElementById("size").value = "";
+		document.getElementById('scale').innerHTML = "Scale undefined";
+		document.getElementById('first').innerHTML = "First point undefined";
+		document.getElementById('second').innerHTML = "Second point undefined";
+    };
+};
+
+function showCoords(eventObj) {
+	var map = document.getElementById("map");
+	var coords = document.getElementById("coords");
+	var x = relation * (eventObj.pageX - map.offsetLeft);
+	var y = relation * (eventObj.pageY - map.offsetTop);
+	coords.innerHTML = "Map coordinates: " + x + ", " + y;
+};
+
+function getLength(eObj) {
+	var map = document.getElementById("map");
+	var scale = document.getElementById("scale");
+	var size = document.getElementById("size");
+	var dist = document.getElementById("distance");
+	
+	if (origin != size.value || (scale.innerHTML === "Scale undefined" && size.value > 0 && dist.innerHTML === "Input length and select first point!")) {
+		origin = size.value;
+		x1 = eObj.pageX - map.offsetLeft;
+		y1 = eObj.pageY - map.offsetTop;
+		relation = origin;
+		scale.innerHTML = "Scale undefined";
+		dist.innerHTML = "Select second point";
+	} else if (scale.innerHTML === "Scale undefined" && dist.innerHTML === "Select second point") {
+		x2 = eObj.pageX - map.offsetLeft;
+		y2 = eObj.pageY - map.offsetTop;
+		relation = relation / Math.sqrt((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2));
+		scale.innerHTML = "   SCALE = " + relation;
+		dist.innerHTML = "Select first point";
+	} else if (dist.innerHTML !== "Select second point") {
+		x1 = relation * (eObj.pageX - map.offsetLeft);
+		y1 = relation * (eObj.pageY - map.offsetTop);
+		document.getElementById("first").innerHTML = "First point: [" + x1 + ", " + y1 + "];"
+		dist.innerHTML = "Select second point";
+	} else if (dist.innerHTML === "Select second point") {
+		x2 = relation * (eObj.pageX - map.offsetLeft);
+		y2 = relation * (eObj.pageY - map.offsetTop);
+		document.getElementById("second").innerHTML = "Second point: [" + x2 + ", " + y2 + "];"
+		var len = Math.sqrt((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2));
+		alert("Lenght = " + len);
+		dist.innerHTML = "Length = " + len + " units of legth";
+	} else alert("WARNING: Something is wrong!");	
+};
+</script>
+<style>
+	p {
+		color: blue;
+		font-weight: bold;
+	}
+
+	#distance {
+		color: red;
+		font-weight: bold;
+	}
+	
+	form {
+		color: brown;
+		font-weight: bold;
+	}
+	
+	#coords {
+		color: grey;
+	}
+</style>
+</head>
+<body>
+
+<form> 
+Put image in the same folder and select it here to upload: <input id="guessInput" type="file">
+<br><br>
+For set scale input real actual length here <input id="size" type="text"> and choose it on the image
+</form>
+<p id="scale">Scale undefined</p>
+<p id="first">First point undefined</p>
+<p id="second">Second point undefined</p>
+<p id="distance">SET IMAGE!</p>
+<p id="coords">Set an image and scale than move mouse to find coordinates...</p>
+<img id="map" border="1px solid #00a8e1">
+</body>
+</html>
