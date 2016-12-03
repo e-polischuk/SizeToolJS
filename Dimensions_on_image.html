@@ -9,96 +9,155 @@
 <script>
 window.onload = function() {
 	var map = document.getElementById("map");
-	map.onmousemove = showCoords;
-	map.onclick = getLength;
-
-	document.getElementById('guessInput').onchange = function(){
-		map.src = this.files[0].name;
-		origin = -1;
-		relation = 0;
-		document.getElementById('distance').innerHTML = "Input length and select first point!";
-		document.getElementById("size").value = "";
-		document.getElementById('scale').innerHTML = "Scale undefined";
-		document.getElementById('first').innerHTML = "First point undefined";
-		document.getElementById('second').innerHTML = "Second point undefined";
-    };
-};
-
-function showCoords(eventObj) {
-	var map = document.getElementById("map");
 	var coords = document.getElementById("coords");
-	var x = relation * (eventObj.pageX - map.offsetLeft);
-	var y = relation * (eventObj.pageY - map.offsetTop);
-	coords.innerHTML = "Map coordinates: " + x + ", " + y;
-};
-
-function getLength(eObj) {
-	var map = document.getElementById("map");
 	var scale = document.getElementById("scale");
 	var size = document.getElementById("size");
 	var dist = document.getElementById("distance");
+	var first = document.getElementById("first");
+	var second = document.getElementById("second");
+	var point1 = document.getElementById("point1");
+	var point2 = document.getElementById("point2");
+	var x1;
+	var x2;
+	var origin;
+	var relation;
 	
-	if (origin != size.value || (scale.innerHTML === "Scale undefined" && size.value > 0 && dist.innerHTML === "Input length and select first point!")) {
-		origin = size.value;
-		x1 = eObj.pageX - map.offsetLeft;
-		y1 = eObj.pageY - map.offsetTop;
-		relation = origin;
-		scale.innerHTML = "Scale undefined";
-		dist.innerHTML = "Select second point";
-	} else if (scale.innerHTML === "Scale undefined" && dist.innerHTML === "Select second point") {
-		x2 = eObj.pageX - map.offsetLeft;
-		y2 = eObj.pageY - map.offsetTop;
-		relation = relation / Math.sqrt((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2));
-		scale.innerHTML = "   SCALE = " + relation;
-		dist.innerHTML = "Select first point";
-	} else if (dist.innerHTML !== "Select second point") {
-		x1 = relation * (eObj.pageX - map.offsetLeft);
-		y1 = relation * (eObj.pageY - map.offsetTop);
-		document.getElementById("first").innerHTML = "First point: [" + x1 + ", " + y1 + "];"
-		dist.innerHTML = "Select second point";
-	} else if (dist.innerHTML === "Select second point") {
-		x2 = relation * (eObj.pageX - map.offsetLeft);
-		y2 = relation * (eObj.pageY - map.offsetTop);
-		document.getElementById("second").innerHTML = "Second point: [" + x2 + ", " + y2 + "];"
-		var len = Math.sqrt((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2));
-		alert("Lenght = " + len);
-		dist.innerHTML = "Length = " + len + " units of legth";
-	} else alert("WARNING: Something is wrong!");	
+	document.getElementById('upload').onchange = function(){
+		map.src = this.files[0].name;
+		origin = -1;
+		relation = 0;
+		clear(point1);
+		clear(point2);
+		document.getElementById('distance').innerHTML = "Input length and select first point!";
+		document.getElementById("size").value = "";
+		document.getElementById('scale').innerHTML = "SCALE UNDEFINED!";
+		document.getElementById('first').innerHTML = "FIRST POINT UNDEFINED";
+		document.getElementById('second').innerHTML = "SECOND POINT UNDEFINED";
+    	};
+	
+	map.onmousemove = function (eventObj) {
+		var x = relation * (eventObj.pageX - map.offsetLeft);
+		var y = relation * (eventObj.pageY - map.offsetTop);
+		coords.innerHTML = "Cursor coordinates in units of length:  X = " + x + ", Y = " + y;
+	};
+	
+	map.onclick = function (eObj) {
+		if (origin != size.value || (scale.innerHTML === "SCALE UNDEFINED!" && size.value > 0 && dist.innerHTML === "Input length and select first point!")) {
+			origin = size.value;
+			x1 = eObj.pageX - map.offsetLeft;
+			y1 = eObj.pageY - map.offsetTop;
+			relation = origin;
+			clear(point2);
+			mark(eObj, point1);
+			scale.innerHTML = "SCALE UNDEFINED!";
+			first.innerHTML = "FIRST POINT UNDEFINED";
+			second.innerHTML = "SECOND POINT UNDEFINED";
+			dist.innerHTML = "Select second point";
+		} else if (scale.innerHTML === "SCALE UNDEFINED!" && dist.innerHTML === "Select second point") {
+			x2 = eObj.pageX - map.offsetLeft;
+			y2 = eObj.pageY - map.offsetTop;
+			mark(eObj, point2);
+			relation = relation / Math.sqrt((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2));
+			alert("SCALE WAS SET =  1 px : " + relation + " units\n\nNow you can choose needed length!");
+			scale.innerHTML = "SCALE = 1px : " + relation + " units";
+			dist.innerHTML = "Select first point";
+		} else if (dist.innerHTML !== "Select second point") {
+			x1 = relation * (eObj.pageX - map.offsetLeft);
+			y1 = relation * (eObj.pageY - map.offsetTop);
+			clear(point2);
+			mark(eObj, point1);
+			first.innerHTML = "FIRST POINT: [" + x1 + ", " + y1 + "];"
+			second.innerHTML = "SECOND POINT UNDEFINED"
+			dist.innerHTML = "Select second point";
+		} else if (dist.innerHTML === "Select second point") {
+			x2 = relation * (eObj.pageX - map.offsetLeft);
+			y2 = relation * (eObj.pageY - map.offsetTop);
+			mark(eObj, point2);
+			second.innerHTML = "SECOND POINT: [" + x2 + ", " + y2 + "];"
+			var len = Math.sqrt((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2));
+			dist.innerHTML = "LENGTH = " + len + " units.";
+			alert("LENGTH = " + len + " units;\n\nFirst point: [" + x1 + ", " + y1 + "];\nSecond point: [" + x2 + ", " + y2 + "].");
+		} else alert("WARNING: Something is wrong!");	
+	};
+
+	function mark(e, point) {
+		if(document.getElementById("flag").checked) {
+			point.src = document.getElementById("marker").value + ".png";
+			var index = point.getAttribute("id") === "point1" ? 1 : 2;
+			point.setAttribute("style", "position:absolute; left:" + (e.pageX-23) + "px; top:" + (e.pageY-23) + "px; z-index:" + index);
+		}
+	}
+	
+	function clear(point) {
+		if(document.getElementById("flag").checked)
+			point.setAttribute("style", "position:absolute; left:-50px; top:-50px");
+	}
+	
+	window.onscroll = function() {
+		clear(point1);
+		clear(point2);
+	}
 };
 </script>
 <style>
-	p {
+	body {
+		font: 80% arial;
+	}
+	#scale {
 		color: blue;
 		font-weight: bold;
+		font-size: 115%;
 	}
-
 	#distance {
 		color: red;
 		font-weight: bold;
+		font-size: 130%;
 	}
-	
-	form {
-		color: brown;
-		font-weight: bold;
-	}
-	
-	#coords {
+	label {
 		color: grey;
+		font-size: 85%;
+	}
+	form, #coords {
+		font-size: 95%;
+		color: green;
+		font-style: italic;
+	}
+	ul {
+		color: grey;
+		font-weight: bold;
+		font-size: 110%;
 	}
 </style>
 </head>
 <body>
-
 <form> 
-Put image in the same folder and select it here to upload: <input id="guessInput" type="file">
-<br><br>
-For set scale input real actual length here <input id="size" type="text"> and choose it on the image
+Put an image in the same folder and choose it here to upload - <input id="upload" type="file">
+<br>
+For set scale input an actual length's value here <input id="size" type="text" style="width:75px; height:12px"> then click its endpoints on the image
 </form>
-<p id="scale">Scale undefined</p>
-<p id="first">First point undefined</p>
-<p id="second">Second point undefined</p>
-<p id="distance">SET IMAGE!</p>
-<p id="coords">Set an image and scale than move mouse to find coordinates...</p>
-<img id="map" border="1px solid #00a8e1">
+<p id="scale">SCALE UNDEFINED!</p>
+<p>
+	<div id="distance">CHOOSE IMAGE!</div>
+	<ul style="list-style: none;">
+		<li id="first">FIRST POINT UNDEFINED</li>
+		<li id="second">SECOND POINT UNDEFINED</li>
+	</ul>
+</p>
+<p>
+<label>
+<input id="flag" type="checkbox"/>
+<select id="marker">
+	<option>marker1</option>
+	<option>marker2</option>
+	<option>marker3</option>
+	<option>marker4</option>
+</select>
+- show chosen points (WARNING: if page zoom > 300%, it works bad).
+</label>
+<br><span id="coords">Choose an image and it will appear below...</span>
+</p>
+<img id="map" border="1px solid #00a8e1" style="z-index:0">
+<img id="point1" style="position:absolute; left:-50px; top:-50px">
+<img id="point2" style="position:absolute; left:-50px; top:-50px" >
 </body>
 </html>
