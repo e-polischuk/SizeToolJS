@@ -9,13 +9,11 @@
 * @param obj - a JS object, wich has to be clonned
 * @return a clone of obj
 */
-const cloneOf = (obj, isProto = false) => {
-  if (!obj || typeof obj !== 'object') return obj;
-  return Object.getOwnPropertyNames(obj).reduce((clone, i) => {
+const cloneOf = (obj, isProto = false) => !obj || typeof obj !== 'object' ? obj :
+  Object.getOwnPropertyNames(obj).reduce((clone, i) => {
       clone[i] = !obj[i] || typeof obj[i] !== 'object' ? obj[i] : cloneOf(obj[i], isProto);
       return clone;
-    }, isProto ? Object.create(cloneOf(Object.getPrototypeOf(obj), true)) : Array.isArray(obj) ? [] : {});
-};
+  }, isProto ? Object.create(cloneOf(Object.getPrototypeOf(obj), true)) : Array.isArray(obj) ? [] : {});
 
 // TESTING of 'cloneOf' function:
 // Function for comparison:
