@@ -1,26 +1,28 @@
 /**
 * This function provides pure (without any properties leak or modifications)
 * clonning of any JS object.
-* But it works significantly slower than JSON.parse(JSON.stringify(obj)) -
-* see in end of this file the testing code and an output of testing results.
-* To increase performance of this function call it with second param 
-* isProto=false (in such case inherited properties of prototype are lost).
+* But if function's second param is true than it works significantly slower than
+* JSON.parse(JSON.stringify(obj)) - see in end of this file the testing code and
+* an output of testing results.
+* To increase performance of this function call it without second param or as
+* isEnumAndProto = false (in such case not enumerable and inherited properties
+* will be lost but performance is significantly better).
 *
 * @param obj - a JS object, wich has to be clonned
 * @return a clone of obj
 */
-const cloneOf = (obj, isProto = false) => !obj || typeof obj !== 'object' ? obj :
-  Object.getOwnPropertyNames(obj).reduce((clone, i) => {
-      clone[i] = !obj[i] || typeof obj[i] !== 'object' ? obj[i] : cloneOf(obj[i], isProto);
+const cloneOf = (obj, isEnumAndProto = false) => !obj || typeof obj !== 'object' ? obj :
+  (isEnumAndProto ? Object.getOwnPropertyNames(obj) : Object.keys(obj)).reduce((clone, i) => {
+      clone[i] = !obj[i] || typeof obj[i] !== 'object' ? obj[i] : cloneOf(obj[i], isEnumAndProto);
       return clone;
-  }, isProto ? Object.create(cloneOf(Object.getPrototypeOf(obj), true)) : Array.isArray(obj) ? [] : {});
+  }, isEnumAndProto ? Object.create(cloneOf(Object.getPrototypeOf(obj), true)) : Array.isArray(obj) ? [] : {});
 
 // TESTING of 'cloneOf' function:
 // Function for comparison:
 const jsonClone = (obj) => JSON.parse(JSON.stringify(obj));
 
 // JS object for testing:
-const isRequiredProto = true;
+const isRequiredProto = false;
 const testObj = {
   a: Object.create({p: 'Test 5 (inherited prop) -> COMPLEATED'}),
   b: {
@@ -84,7 +86,7 @@ const testOf = (fName, funct) => {
     console.log(Object.getPrototypeOf(testObj.a).p);
     Object.getPrototypeOf(testObj.a).p = temp;
   } else console.log('Test 6 (clonned inherited prop) -> FAILED');
-  printTestData(testObjClone, 'Clone by ' + fName);
+  // printTestData(testObjClone, 'Clone by ' + fName);
   console.log('');
 };
 
@@ -127,7 +129,7 @@ for (var iter = 1; iter < 1025; iter = iter * 2) { //10000
   console.log('---------------------------------------------------------------');
 }
 
-/* ##### RANDOM OUTPUT OF ABOVE TESTING CODE: #####
+/* ##### RANDOM OUTPUT OF TESTING CODE FOR CASE - isEnumAndProto = true: #####
 ###################     Data Testing:    ######################
 =================== Test for "cloneOf" ===================
 Test 1 (clonned function) -> COMPLEATED
@@ -136,48 +138,6 @@ Test 3 (not enumerable prop) -> COMPLEATED
 Test 4 (clonned not enumerable prop) -> COMPLEATED
 Test 5 (inherited prop) -> COMPLEATED
 Test 6 (clonned inherited prop) -> COMPLEATED
---------------- Clone by cloneOf -------------------
-{ '1': 'number',
-  a: {},
-  b:
-   { a: 2,
-     b:
-      Array {
-        '0': [Object],
-        '1': [Object],
-        '2': 17,
-        '3': false,
-        '4': null,
-        '5': undefined,
-        '6': [Function],
-        length: 7 } },
-  c: { a: 'stop' },
-  d: Array { '0': 17, '1': 25, '2': 33, length: 3 },
-  e: 'text',
-  f: [Function: f],
-  fa: Array { '0': [Function], length: 1 },
-  g: '',
-  i: null,
-  j: undefined,
-  p: true,
-  n: false,
-  '$': 'symbol',
-  notEnum: 'Test 4 (clonned not enumerable prop) -> FAILED' }
-1 -> string; isArray = false
-a -> object; isArray = false
-b -> object; isArray = false
-c -> object; isArray = false
-d -> object; isArray = false
-e -> string; isArray = false
-f -> function; isArray = false
-fa -> object; isArray = false
-g -> string; isArray = false
-i -> object; isArray = false
-j -> undefined; isArray = false
-p -> boolean; isArray = false
-n -> boolean; isArray = false
-$ -> string; isArray = false
-notEnum -> string; isArray = false
 
 =================== Test for "jsonClone" ===================
 Test 1 (clonned function) -> FAILED
@@ -186,32 +146,6 @@ Test 3 (not enumerable prop) -> FAILED
 Test 4 (clonned not enumerable prop) -> FAILED
 Test 5 (inherited prop) -> FAILED
 Test 6 (clonned inherited prop) -> FAILED
---------------- Clone by jsonClone -------------------
-{ '1': 'number',
-  a: {},
-  b:
-   { a: 2, b: [ [Object], [Object], 17, false, null, null, null ] },
-  c: { a: 'stop' },
-  d: [ 17, 25, 33 ],
-  e: 'text',
-  fa: [ null ],
-  g: '',
-  i: null,
-  p: true,
-  n: false,
-  '$': 'symbol' }
-1 -> string; isArray = false
-a -> object; isArray = false
-b -> object; isArray = false
-c -> object; isArray = false
-d -> object; isArray = true
-e -> string; isArray = false
-fa -> object; isArray = true
-g -> string; isArray = false
-i -> object; isArray = false
-p -> boolean; isArray = false
-n -> boolean; isArray = false
-$ -> string; isArray = false
 
 =================== Test for "Object.assign" ===================
 Test 1 (clonned function) -> COMPLEATED
@@ -220,83 +154,125 @@ Test 3 (not enumerable prop) -> COMPLEATED
 Test 4 (clonned not enumerable prop) -> FAILED
 Test 5 (inherited prop) -> COMPLEATED
 Test 6 (clonned inherited prop) -> FAILED
---------------- Clone by Object.assign -------------------
-{ '1': 'number',
-  a: {},
-  b:
-   { a: 2,
-     b:
-      [ [Object], [Object], 17, false, null, undefined, [Function] ] },
-  c: { a: 'stop' },
-  d: [ 17, 25, 33 ],
-  e: 'text',
-  f: [Function: f],
-  fa: [ [Function] ],
-  g: '',
-  i: null,
-  j: undefined,
-  p: true,
-  n: false,
-  '$': 'symbol' }
-1 -> string; isArray = false
-a -> object; isArray = false
-b -> object; isArray = false
-c -> object; isArray = false
-d -> object; isArray = true
-e -> string; isArray = false
-f -> function; isArray = false
-fa -> object; isArray = true
-g -> string; isArray = false
-i -> object; isArray = false
-j -> undefined; isArray = false
-p -> boolean; isArray = false
-n -> boolean; isArray = false
-$ -> string; isArray = false
-notEnum -> string; isArray = false
 
 ##################   Performance Testing:   ######################
-1 iterations -> Awerage Time of "cloneOf" = 0.00044640890000000017 sec
-1 iterations -> Awerage Time of "jsonClone" = 0.0000288675 sec
-1 iterations -> "cloneOf" is SLOWER in 15.464 times
+1 iterations -> Awerage Time of "cloneOf" = 0.0005854807799999999 sec
+1 iterations -> Awerage Time of "jsonClone" = 0.000036308460000000004 sec
+1 iterations -> "cloneOf" is SLOWER in 16.125 times
 ---------------------------------------------------------------
-2 iterations -> Awerage Time of "cloneOf" = 0.0007024945099999999 sec
-2 iterations -> Awerage Time of "jsonClone" = 0.000038796280000000005 sec
-2 iterations -> "cloneOf" is SLOWER in 18.107 times
+2 iterations -> Awerage Time of "cloneOf" = 0.0007744734100000001 sec
+2 iterations -> Awerage Time of "jsonClone" = 0.000049225320000000006 sec
+2 iterations -> "cloneOf" is SLOWER in 15.733 times
 ---------------------------------------------------------------
-4 iterations -> Awerage Time of "cloneOf" = 0.0012704389400000004 sec
-4 iterations -> Awerage Time of "jsonClone" = 0.00006162688999999999 sec
-4 iterations -> "cloneOf" is SLOWER in 20.615 times
+4 iterations -> Awerage Time of "cloneOf" = 0.0016094376199999993 sec
+4 iterations -> Awerage Time of "jsonClone" = 0.00007614844 sec
+4 iterations -> "cloneOf" is SLOWER in 21.136 times
 ---------------------------------------------------------------
-8 iterations -> Awerage Time of "cloneOf" = 0.0023849932900000008 sec
-8 iterations -> Awerage Time of "jsonClone" = 0.00010260326999999996 sec
-8 iterations -> "cloneOf" is SLOWER in 23.245 times
+8 iterations -> Awerage Time of "cloneOf" = 0.0025505842200000007 sec
+8 iterations -> Awerage Time of "jsonClone" = 0.00011128764000000002 sec
+8 iterations -> "cloneOf" is SLOWER in 22.919 times
 ---------------------------------------------------------------
-16 iterations -> Awerage Time of "cloneOf" = 0.004580016660000001 sec
-16 iterations -> Awerage Time of "jsonClone" = 0.00018865606999999993 sec
-16 iterations -> "cloneOf" is SLOWER in 24.277 times
+16 iterations -> Awerage Time of "cloneOf" = 0.004900409210000001 sec
+16 iterations -> Awerage Time of "jsonClone" = 0.00020382183 sec
+16 iterations -> "cloneOf" is SLOWER in 24.043 times
 ---------------------------------------------------------------
-32 iterations -> Awerage Time of "cloneOf" = 0.009043858370000003 sec
-32 iterations -> Awerage Time of "jsonClone" = 0.00034908199 sec
-32 iterations -> "cloneOf" is SLOWER in 25.908 times
+32 iterations -> Awerage Time of "cloneOf" = 0.009900946930000003 sec
+32 iterations -> Awerage Time of "jsonClone" = 0.0003899778300000002 sec
+32 iterations -> "cloneOf" is SLOWER in 25.388 times
 ---------------------------------------------------------------
-64 iterations -> Awerage Time of "cloneOf" = 0.017952498419999994 sec
-64 iterations -> Awerage Time of "jsonClone" = 0.0007134625500000004 sec
-64 iterations -> "cloneOf" is SLOWER in 25.162 times
+64 iterations -> Awerage Time of "cloneOf" = 0.018079124240000004 sec
+64 iterations -> Awerage Time of "jsonClone" = 0.0007610325199999998 sec
+64 iterations -> "cloneOf" is SLOWER in 23.756 times
 ---------------------------------------------------------------
-128 iterations -> Awerage Time of "cloneOf" = 0.035965715610000004 sec
-128 iterations -> Awerage Time of "jsonClone" = 0.0013158153299999997 sec
-128 iterations -> "cloneOf" is SLOWER in 27.333 times
+128 iterations -> Awerage Time of "cloneOf" = 0.03588377968 sec
+128 iterations -> Awerage Time of "jsonClone" = 0.0013358488200000003 sec
+128 iterations -> "cloneOf" is SLOWER in 26.862 times
 ---------------------------------------------------------------
-256 iterations -> Awerage Time of "cloneOf" = 0.07893317279999994 sec
-256 iterations -> Awerage Time of "jsonClone" = 0.00290598458 sec
-256 iterations -> "cloneOf" is SLOWER in 27.162 times
+256 iterations -> Awerage Time of "cloneOf" = 0.07350399859 sec
+256 iterations -> Awerage Time of "jsonClone" = 0.0027395478799999997 sec
+256 iterations -> "cloneOf" is SLOWER in 26.831 times
 ---------------------------------------------------------------
-512 iterations -> Awerage Time of "cloneOf" = 0.14769702924 sec
-512 iterations -> Awerage Time of "jsonClone" = 0.005228878300000001 sec
-512 iterations -> "cloneOf" is SLOWER in 28.246 times
+512 iterations -> Awerage Time of "cloneOf" = 0.14269501291 sec
+512 iterations -> Awerage Time of "jsonClone" = 0.005348719509999999 sec
+512 iterations -> "cloneOf" is SLOWER in 26.678 times
 ---------------------------------------------------------------
-1024 iterations -> Awerage Time of "cloneOf" = 0.2981846621299999 sec
-1024 iterations -> Awerage Time of "jsonClone" = 0.011137253689999998 sec
-1024 iterations -> "cloneOf" is SLOWER in 26.774 times
+1024 iterations -> Awerage Time of "cloneOf" = 0.28595831950999995 sec
+1024 iterations -> Awerage Time of "jsonClone" = 0.01048451649 sec
+1024 iterations -> "cloneOf" is SLOWER in 27.274 times
 ---------------------------------------------------------------
-[Finished in 62.46s]*/
+[Finished in 60.4s]
+*/
+
+/* ##### RANDOM OUTPUT OF TESTING CODE FOR CASE - isEnumAndProto = false: #####
+###################     Data Testing:    ######################
+=================== Test for "cloneOf" ===================
+Test 1 (clonned function) -> COMPLEATED
+Test 2 (clonned nested object) -> COMPLEATED
+Test 3 (not enumerable prop) -> FAILED
+Test 4 (clonned not enumerable prop) -> FAILED
+Test 5 (inherited prop) -> FAILED
+Test 6 (clonned inherited prop) -> FAILED
+
+=================== Test for "jsonClone" ===================
+Test 1 (clonned function) -> FAILED
+Test 2 (clonned nested object) -> COMPLEATED
+Test 3 (not enumerable prop) -> FAILED
+Test 4 (clonned not enumerable prop) -> FAILED
+Test 5 (inherited prop) -> FAILED
+Test 6 (clonned inherited prop) -> FAILED
+
+=================== Test for "Object.assign" ===================
+Test 1 (clonned function) -> COMPLEATED
+Test 2 (clonned nested object) -> FAILED
+Test 3 (not enumerable prop) -> COMPLEATED
+Test 4 (clonned not enumerable prop) -> FAILED
+Test 5 (inherited prop) -> COMPLEATED
+Test 6 (clonned inherited prop) -> FAILED
+
+##################   Performance Testing:   ######################
+1 iterations -> Awerage Time of "cloneOf" = 0.000018850110000000002 sec
+1 iterations -> Awerage Time of "jsonClone" = 0.000017139680000000003 sec
+1 iterations -> "cloneOf" is SLOWER in 1.100 times
+---------------------------------------------------------------
+2 iterations -> Awerage Time of "cloneOf" = 0.00005891679999999999 sec
+2 iterations -> Awerage Time of "jsonClone" = 0.000042579769999999986 sec
+2 iterations -> "cloneOf" is SLOWER in 1.384 times
+---------------------------------------------------------------
+4 iterations -> Awerage Time of "cloneOf" = 0.00004829268000000001 sec
+4 iterations -> Awerage Time of "jsonClone" = 0.00006485845999999999 sec
+4 iterations -> "cloneOf" is FASTER in 1.343 times
+---------------------------------------------------------------
+8 iterations -> Awerage Time of "cloneOf" = 0.00008801825999999995 sec
+8 iterations -> Awerage Time of "jsonClone" = 0.00012403738000000002 sec
+8 iterations -> "cloneOf" is FASTER in 1.409 times
+---------------------------------------------------------------
+16 iterations -> Awerage Time of "cloneOf" = 0.00014946941000000004 sec
+16 iterations -> Awerage Time of "jsonClone" = 0.0002260331 sec
+16 iterations -> "cloneOf" is FASTER in 1.512 times
+---------------------------------------------------------------
+32 iterations -> Awerage Time of "cloneOf" = 0.00023039472000000005 sec
+32 iterations -> Awerage Time of "jsonClone" = 0.00035851711000000003 sec
+32 iterations -> "cloneOf" is FASTER in 1.556 times
+---------------------------------------------------------------
+64 iterations -> Awerage Time of "cloneOf" = 0.00042246305999999996 sec
+64 iterations -> Awerage Time of "jsonClone" = 0.0006566058799999999 sec
+64 iterations -> "cloneOf" is FASTER in 1.554 times
+---------------------------------------------------------------
+128 iterations -> Awerage Time of "cloneOf" = 0.0008478348899999998 sec
+128 iterations -> Awerage Time of "jsonClone" = 0.0013189032199999997 sec
+128 iterations -> "cloneOf" is FASTER in 1.556 times
+---------------------------------------------------------------
+256 iterations -> Awerage Time of "cloneOf" = 0.0018094340399999994 sec
+256 iterations -> Awerage Time of "jsonClone" = 0.0027916327399999993 sec
+256 iterations -> "cloneOf" is FASTER in 1.543 times
+---------------------------------------------------------------
+512 iterations -> Awerage Time of "cloneOf" = 0.003261039110000002 sec
+512 iterations -> Awerage Time of "jsonClone" = 0.005047586580000001 sec
+512 iterations -> "cloneOf" is FASTER in 1.548 times
+---------------------------------------------------------------
+1024 iterations -> Awerage Time of "cloneOf" = 0.0064841967900000005 sec
+1024 iterations -> Awerage Time of "jsonClone" = 0.01013567198 sec
+1024 iterations -> "cloneOf" is FASTER in 1.563 times
+---------------------------------------------------------------
+[Finished in 3.978s]
+*/
